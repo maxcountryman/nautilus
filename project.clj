@@ -13,6 +13,8 @@
                  [ring/ring-json "0.3.1"]
                  [ring-mock "0.1.5"]
                  [org.clojure/clojure "1.6.0"]
+                 [org.clojure/tools.cli "0.3.1"]
                  [org.clojure/tools.logging "0.3.0"]]
   :profiles {:dev {:dependencies [[org.clojure/tools.namespace "0.2.4"]]
-                   :source-paths ["dev"]}})
+                   :source-paths ["dev"]}}
+  :main nautilus.core)
