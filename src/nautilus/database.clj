@@ -7,74 +7,100 @@
 
 
 ;; Persistence logic
-(defn- merge-existing
+(defn merge-existing
+  "Given a new value, returns a closure which takes an existing value. This
+  closure merges the existing with the new."
   [new]
   (fn [existing]
     (merge existing new)))
 
 (defn new-user!
-  [{:keys [users-bucket]} email password]
+  "Creates a new user in the user-bucket keyed by login containing a map which
+  contains the encrypted password."
+  [{:keys [user-bucket]} login password]
   (let [encrypted (bcrypt/encrypt password)]
-    (store/modify users-bucket email (merge-existing {:password encrypted}))))
+    (store/modify user-bucket login (merge-existing {:password encrypted}))))
 
 (defn new-token!
-  [{:keys [users-bucket tokens-bucket]} email token]
+  "Creates a new token in the token-bucket keyed by token containing login.
+  Updates the user associated with login to contain the token in its value map.
+  Also deletes any previous tokens associated with a user."
+  [{:keys [token-bucket user-bucket]} login token]
 
-  ;; Establish a bidirectional relationship between the user and tokens buckets
-  (store/modify users-bucket email (merge-existing {:token token}))
-  (store/modify tokens-bucket token (merge-existing {:email email})))
+  ;; Remove previous token if any
+  (when-let [t (:token (store/get user-bucket login))]
+    (store/delete token-bucket t))
+
+  ;; Create bidirectional relation between token and user
+  (store/modify user-bucket login (merge-existing {:token token}))
+  (store/modify token-bucket token (constantly login)))
+
+(defn new-service!
+  [{:keys [service-bucket]} service host]
+  (store/modify service-bucket service (merge-existing host)))
 
 
 ;; Database connection
-(defn new-client
+(defn connect-client
+  "Connects a Riak client with an opts map and returns the client."
   [opts]
   (riak/connect-client opts))
 
-(defn new-bucket
+(defn connect-bucket
+  "Connects a Riak bucket with an opts map and returns the bucket."
   [opts]
   (riak/connect-bucket opts))
 
-(defn users-bucket
+(defn connect-user-bucket
+  "Connects the user bucket and returns the bucket."
   [client]
-  (new-bucket {:client      client
-               :bucket-name "users"
-               :merge-fn    set/union}))
+  (connect-bucket {:client      client
+                   :bucket-name "user"
+                   :merge-fn    set/union}))
 
-(defn tokens-bucket
+(defn connect-token-bucket
+  "Connects the token bucket and returns the bucket."
   [client]
-  (new-bucket {:client      client
-               :bucket-name "tokens"
-               :merge-fn    set/union}))
+  (connect-bucket {:client      client
+                   :bucket-name "token"
+                   :merge-fn    set/union}))
 
-(defn services-bucket
+(defn connect-service-bucket
+  "Connects the service bucket and returns the bucket."
   [client]
-  (new-bucket {:client      client
-               :bucket-name "services"
-               :merge-fn    set/union}))
+  (connect-bucket {:client      client
+                   :bucket-name "service"
+                   :merge-fn    set/union}))
 
 
 ;; Convenience fns
 (defn user-exists?
-  [{:keys [users-bucket]} email]
+  "Returns true if login is in the user-bucket, otherwise false."
+  [{:keys [user-bucket]} login]
   (boolean
-    (store/get users-bucket email)))
+    (store/get user-bucket login)))
 
 (defn user-authenticates?
-  [{:keys [users-bucket]} email offered]
+  "Returns true if login's encrypted password matches offered, otherwise
+  false."
+  [{:keys [user-bucket]} login offered]
   (boolean
-    (when-let [encrypted (:password (store/get users-bucket email))]
+    (when-let [encrypted (:password (store/get user-bucket login))]
       (bcrypt/check offered encrypted))))
 
-(defn valid-token?
-  [{:keys [tokens-bucket]} token]
+(defn token-exists?
+  "Returns true if token is in the token-bucket, otherwise false."
+  [{:keys [token-bucket]} token]
   (boolean
-    (store/get tokens-bucket token)))
+    (store/get token-bucket token)))
 
 (defn get-service
-  [{:keys [services-bucket]} service]
-  (store/get services-bucket service))
+  "Retrieves service from the service-bucket."
+  [{:keys [service-bucket]} service]
+  (store/get service-bucket service))
 
 (defn service-exists?
+  "Returns true if service is in the service-bucket, otherwise false."
   [database service]
   (boolean
     (get-service database service)))

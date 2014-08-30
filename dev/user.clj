@@ -1,7 +1,7 @@
 (ns user
-  (:require [com.stuartsierra.component :as component]
+  (:require [com.stuartsierra.component   :as component]
             [clojure.tools.namespace.repl :refer [refresh]]
-            [nautilus.core :as app]))
+            [nautilus.system              :refer [new-system]]))
 
 (def system nil)
 
@@ -9,7 +9,7 @@
   []
   (alter-var-root #'system
     ;; TODO: use environment variables for system map?
-    (constantly (app/new-system {}))))
+    (constantly (new-system {}))))
 
 (defn start
   []
