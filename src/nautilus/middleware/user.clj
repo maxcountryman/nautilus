@@ -34,8 +34,21 @@
     (boolean
       (re-matches #"^\S+@\S+$" email))))  ;; Let's be lenient here
 
+(defn json-request?
+  "Returns true if request content-type conforms of a regex, false otherwise."
+  [request]
+  (if-let [type (:content-type request)]
+    (not (empty? (re-find #"^application/(.+\+)?json" type)))))
+
 
 ;; Request validators
+(defn ensure-content-type
+  "Return if request content-type is a JSON content-type, otherwise an error
+  response."
+  [request]
+  (when-not (json-request? request)
+    (utils/invalid-request "Non-JSON Content-Type")))
+
 (defn ensure-args
   "Returns nil if request body contains email and password, otherwise an error
   response. Anticipates wrap-json-body proceeded this."
@@ -60,7 +73,8 @@
     (utils/invalid-request "User exists")))
 
 (def maybe-errored
-  (some-fn ensure-args
+  (some-fn ensure-content-type
+           ensure-args
            ensure-email
            ensure-unique))
 

@@ -18,6 +18,7 @@
     => (component/stop sys)"
   (:require [com.stuartsierra.component    :as component]
             [nautilus.component.database   :as database]
+            [nautilus.component.portal     :as portal]
             [nautilus.component.web-server :as web-server]))
 
 (defn new-system
@@ -30,15 +31,18 @@
     :web-jetty-opts - A map of Jetty configuration values; see ring-jetty.
     :db-host        - A string, defaults to localhost.
     :db-port        - A long, defaults to 8087."
-  [{:keys [web-host web-port web-jetty-opts db-host db-port]
-    :or   {web-host       "localhost"
-           web-port       3000
-           web-jetty-opts {:join? false}
-           db-host        "localhost"
-           db-port        8087}}]
+  ([]
+   (new-system {}))
+  ([{:keys [web-host web-port web-jetty-opts db-host db-port]
+     :or   {web-host       "localhost"
+            web-port       3000
+            web-jetty-opts {:join? false}
+            db-host        "localhost"
+            db-port        8087}}]
 
-  (component/system-map
-    :database   (database/new-component db-host db-port)
-    :web-server (component/using
-                  (web-server/new-component web-host web-port web-jetty-opts)
-                  [:database])))
+   (component/system-map
+     :database   (database/new-component db-host db-port)
+     :portal     (portal/new-component)
+     :web-server (component/using
+                   (web-server/new-component web-host web-port web-jetty-opts)
+                   [:database :portal]))))

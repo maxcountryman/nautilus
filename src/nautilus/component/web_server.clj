@@ -21,18 +21,18 @@
 
 (defn new-handler
   "Returns a new Ring handler, given a db (Database component)."
-  [db]
+  [db portals]
   (-> (constantly {:status 404 :body "Not Found"})  ;; default "handler"
-      (middleware/wrap-middleware db)))
+      (middleware/wrap-middleware db portals)))
 
 (defrecord WebServer
-  [^Server server database host port jetty-opts]
+  [^Server server database portal host port jetty-opts]
 
   component/Lifecycle
   (start [this]
     (if server
       this
-      (let [handler (new-handler database)
+      (let [handler (new-handler database portal)
             server  (ring-jetty/run-jetty handler (merge {:host  host
                                                           :port  port
                                                           :join? false}

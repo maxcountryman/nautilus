@@ -1,9 +1,8 @@
 (ns nautilus.database
-  "Persistence layer."
-  (:require [clojure.set            :as set]
-            [crypto.password.bcrypt :as bcrypt]
+  "Provides an interface to Riak."
+  (:require [crypto.password.bcrypt :as bcrypt]
             [liza.store             :as store]
-            [liza.store.riak        :as riak]))
+            [nautilus.riak          :as riak]))
 
 
 ;; Persistence logic
@@ -36,6 +35,7 @@
   (store/modify token-bucket token (constantly login)))
 
 (defn new-service!
+  "Creates a new service mapped to a host."
   [{:keys [service-bucket]} service host]
   (store/modify service-bucket service (merge-existing host)))
 
@@ -55,22 +55,19 @@
   "Connects the user bucket and returns the bucket."
   [client]
   (connect-bucket {:client      client
-                   :bucket-name "user"
-                   :merge-fn    set/union}))
+                   :bucket-name "user"}))
 
 (defn connect-token-bucket
   "Connects the token bucket and returns the bucket."
   [client]
   (connect-bucket {:client      client
-                   :bucket-name "token"
-                   :merge-fn    set/union}))
+                   :bucket-name "token"}))
 
 (defn connect-service-bucket
   "Connects the service bucket and returns the bucket."
   [client]
   (connect-bucket {:client      client
-                   :bucket-name "service"
-                   :merge-fn    set/union}))
+                   :bucket-name "service"}))
 
 
 ;; Convenience fns
@@ -88,11 +85,16 @@
     (when-let [encrypted (:password (store/get user-bucket login))]
       (bcrypt/check offered encrypted))))
 
+(defn get-token
+  "Retrieves token from the token-bucket."
+  [{:keys [token-bucket]} token]
+  (store/get token-bucket token))
+
 (defn token-exists?
   "Returns true if token is in the token-bucket, otherwise false."
-  [{:keys [token-bucket]} token]
+  [database token]
   (boolean
-    (store/get token-bucket token)))
+    (get-token database token)))
 
 (defn get-service
   "Retrieves service from the service-bucket."

@@ -8,8 +8,7 @@
 (defn init
   []
   (alter-var-root #'system
-    ;; TODO: use environment variables for system map?
-    (constantly (new-system {}))))
+    (constantly (new-system))))
 
 (defn start
   []
