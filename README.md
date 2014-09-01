@@ -76,7 +76,7 @@ are provided to allow for adding, updating, and removing services and users.
 Several endpoints facilitate user management, backend service management, and
 portal lifecycles.
 
-User creation:
+### User Creation
 
 **request**
 ```http
@@ -96,7 +96,7 @@ Content-Type: application/json; charset=utf-8
 X-Request-Id: 2e8d4129-74f0-4d55-824c-a4609624ae81
 ```
 
-Bearer token creation:
+### Bearer Token Creation
 
 **request**
 ```http
@@ -123,7 +123,7 @@ X-Request-Id: ed9d091f-e289-4fbc-8057-bde5c1a02f99
 }
 ```
 
-Portal creation:
+### Portal Creation
 
 **request**
 ```http
@@ -132,7 +132,7 @@ Host: localhost:3000
 Authorization: Bearer L0rF0wJTxyHk2K3zzpD4hHrv
 ```
 
-**response
+**response**
 ```http
 HTTP/1.1 201 Created
 Content-Type: application/json; charset=utf-8
