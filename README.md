@@ -47,7 +47,7 @@ Nautilus will respond by issuing a new token to for the provided username. Bear
 in mind this implies any previous token is no longer valid. Using this token,
 a portal can be requested.
 
-``sh
+```sh
 $ curl -X POST http://localhost:3000/service/endpoint \
        -H 'Authorization: Bearer L0rF0wJTxyHk2K3zzpD4hHrv'
 
