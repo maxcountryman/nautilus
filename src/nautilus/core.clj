@@ -2,7 +2,8 @@
   "Main entrypoint."
   (:require [clojure.tools.cli          :refer [cli]]
             [com.stuartsierra.component :as component]
-            [nautilus.system            :as system]))
+            [nautilus.system            :as system])
+  (:gen-class))
 
 (def specs
   [["--web-host"
