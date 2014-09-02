@@ -83,6 +83,7 @@ portal lifecycles.
 POST /user HTTP/1.1
 Host: localhost:3000
 Content-Type: application/json
+
 {
     "email": "foo@bar.tld",
     "password": "hunter2"

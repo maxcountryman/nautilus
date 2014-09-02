@@ -28,8 +28,8 @@
                      opts]
   liza.store/Bucket
   (store/get [this k]
-    (-> (.fetch bucket k)
-        (.r (:r opts))
+    (-> (.fetch bucket ^String k)
+        (.r ^int (:r opts))
         (.notFoundOK (:not-found-ok? opts))
         (.withConverter (create-converter this k))
         (.withResolver resolver)
@@ -37,7 +37,7 @@
         .execute))
 
   (store/put [this k v]
-    (-> (.store bucket k v)
+    (-> (.store ^Bucket bucket ^String k v)
         (.withConverter (create-converter this k))
         (.withResolver resolver)
         (.withRetrier retrier)
@@ -48,8 +48,8 @@
 
   store/ModifiableBucket
   (modify [this k f]
-    (-> (.store bucket k "")
-        (.r (:r opts))
+    (-> (.store ^Bucket bucket ^String k "")
+        (.r ^int (:r opts))
         (.notFoundOK (:not-found-ok? opts))
         (.withConverter (create-converter this k))
         (.withResolver resolver)
@@ -60,17 +60,18 @@
 
   store/DeleteableBucket
   (delete [_ k]
-    (-> (.delete bucket k)
+    (-> (.delete ^Bucket bucket ^String k)
         (.withRetrier retrier)
         .execute))
 
   store/Wipeable
   (wipe [_]
-    (pmap (fn [k]
-            (-> bucket
-                (.delete k)
-                .execute))
-          (.keys bucket))))
+    (pmap
+      (fn [^String k]
+        (-> bucket
+            (.delete k)
+            .execute))
+      (.keys bucket))))
 
 (defmulti serialize-content
   (fn [content-type data]
@@ -95,14 +96,14 @@
       (f existing))))
 
 (defn create-converter
-  [bucket k]
+  [bucket ^String k]
   (reify Converter
     (fromDomain [_ o vclock]
       (-> (RiakObjectBuilder/newBuilder (.bucket-name bucket) k)
-        (.withVClock vclock)
-        (.withValue (serialize-content (.content-type bucket) o))
-        (.withContentType (.content-type bucket))
-        .build))
+          (.withVClock vclock)
+          (.withValue ^bytes (serialize-content (.content-type bucket) o))
+          (.withContentType (.content-type bucket))
+          .build))
     (toDomain [_ raw]
       (when-not (or (nil? raw) (.isDeleted raw))
         (deserialize-content (.getContentType raw) (.getValue raw))))))
@@ -155,6 +156,7 @@
            ^String  backend
            ^Integer retrier-attempts
            ^Integer r]
+
     :or {merge-fn                  clojure.set/union
          content-type              default-content-type
          ^boolean allow-siblings?  true
