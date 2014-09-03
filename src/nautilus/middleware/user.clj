@@ -85,16 +85,16 @@
   a db key. Returns a successful response."
   [{:keys [db] {:keys [email password]} :body}]
 
-  ;; TOOD: return user in response
-  (database/new-user! db email password)
-  {:status 201 :body {:ok true}})
+  (let [user (dissoc (database/new-user! db email password) :password)]
+    (prn user)
+    {:status 201 :body user}))
 
 (defn create-response
   "User creation wrapper, returns either an error or a successful response."
   [request]
   (or (utils/maybe-wrong-method request #{:post})
-          (maybe-errored request)
-          (create-user request)))
+      (maybe-errored request)
+      (create-user request)))
 
 
 ;; Middleware

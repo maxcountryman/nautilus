@@ -27,19 +27,14 @@
             [nautilus.middleware.shared :as shared]
             [nautilus.utils             :as utils]))
 
-;; Registered OAuth 2.0 clients, checked in `ensure-client-authorized`
-;;
-;; TODO: Move to database? Make a component?
-(def client-creds #{["foo" "bar"]})
-
 
 ;; Utils
 (defn valid-client-creds?
   "Returns true if client-id and client-secret are valid client credentials,
   otherwise false."
-  [client-id client-secret]
+  [{:keys [credentials]} client-id client-secret]
   (boolean
-    (some client-creds #{[client-id client-secret]})))
+    (some credentials #{[client-id client-secret]})))
 
 (defn get-form-param
   "Retrieves param from form-params. Anticipates wrap-params proceeded this."
@@ -55,8 +50,8 @@
 (defn ensure-client-authorized
   "Returns nil if request contains valid client credentials, otherwise an error
   response."
-  [{{:keys [username password]} :authorization}]
-  (when-not (valid-client-creds? username password)
+  [{:keys [client] {:keys [username password]} :authorization}]
+  (when-not (valid-client-creds? client username password)
     (-> (utils/error-response "unauthorized_client" "Invalid credentials")
         (assoc :status 401)
         (assoc :headers {"WWW-Authenticate" "Basic realm=\"nautilus\""}))))
@@ -131,9 +126,9 @@
 
 (defn wrap-oauth-routes
   "A middleware which adds a token creation endpoint."
-  [handler db]
+  [handler client db]
   (fn [request]
-    (let [request      (assoc request :db db)
+    (let [request      (assoc request :client client :db db)
           create-resp* (-> create-response
                            shared/wrap-basic-auth
                            wrap-json-response

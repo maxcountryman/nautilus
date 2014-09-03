@@ -28,7 +28,7 @@
                      opts]
   liza.store/Bucket
   (store/get [this k]
-    (-> (.fetch bucket ^String k)
+    (-> (.fetch ^Bucket bucket ^String k)
         (.r ^int (:r opts))
         (.notFoundOK (:not-found-ok? opts))
         (.withConverter (create-converter this k))

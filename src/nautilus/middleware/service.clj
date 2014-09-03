@@ -36,8 +36,8 @@
 (defn ensure-client-authorized
   "Returns nil if request contains valid client credentials, otherwise an error
   response."
-  [{{:keys [username password]} :authorization}]
-  (when-not (oauth/valid-client-creds? username password)
+  [{:keys [client] {:keys [username password]} :authorization}]
+  (when-not (oauth/valid-client-creds? client username password)
     (-> (utils/error-response "unauthorized_client" "Invalid credentials")
         (assoc :status 401)
         (assoc :headers {"WWW-Authenticate" "Basic realm=\"nautilus\""}))))
@@ -71,7 +71,7 @@
   response containing the service."
   [{:keys [db] {:keys [host service]} :body}]
   {:status 201
-   :body (database/new-service! db service {:host host})})
+   :body   (database/new-service! db service {:host host})})
 
 (defn create-response
   "Service creation wrapper, returns either an error or a successful response."
@@ -84,9 +84,9 @@
 ;; Middleware
 (defn wrap-service-routes
   "A middleware which adds a service creation endpoint."
-  [handler db]
+  [handler client db]
   (fn [request]
-    (let [request      (assoc request :db db)
+    (let [request      (assoc request :client client :db db)
           create-resp* (-> create-response
                            shared/wrap-basic-auth
                            wrap-json-response

@@ -9,6 +9,8 @@
             [nautilus.utils              :as utils]))
 
 (defn wrap-cors
+  "A middleware which attaches CORS-related headers to responses and responds
+  appropriately to OPTIONS."
   [handler]
   (fn [request]
     (let [resp (if (= :options (:request-method request))
@@ -50,11 +52,11 @@
   
   Takes a handler and db (a Database component) and returns a fn which takes a
   request map."
-  [handler db portal]
+  [client handler db portal]
   (-> handler
       (wrap-user-routes db)
-      (wrap-oauth-routes db)
-      (wrap-service-routes db)
+      (wrap-oauth-routes client db)
+      (wrap-service-routes client db)
       (wrap-portal-routes db portal)
       wrap-health-routes
       wrap-cors

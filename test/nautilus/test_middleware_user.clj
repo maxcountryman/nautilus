@@ -38,25 +38,25 @@
          (utils/invalid-request "Invalid email"))))
 
 (deftest test-ensure-unique
-  (with-redefs [nautilus.database/connect-bucket (constantly (in-memory-store))]
+  (with-redefs [database/connect-bucket (constantly (in-memory-store))]
     (alter-var-root #'system component/start))
 
   (let [db (:database system)]
     (database/new-user! db "foo@bar.tld" "hunter2")
     (is (nil? (user/ensure-unique {:db db :body {:email "maxc@me.com"}})))
     (is (= (user/ensure-unique {:db db :body {:email "foo@bar.tld"}})
-           (utils/invalid-request "User exists")))
+           (utils/invalid-request "User exists"))))
 
-    (alter-var-root #'system component/stop)))
+  (alter-var-root #'system component/stop))
 
 (deftest test-create-user
-  (with-redefs [nautilus.database/connect-bucket (constantly (in-memory-store))]
+  (with-redefs [database/connect-bucket (constantly (in-memory-store))]
     (alter-var-root #'system component/start))
 
   (let [db    (:database system)
         login "baz@qux.tld"]
     (is (= (user/create-user {:db db :body {:email login}})
-           {:status 201 :body {:ok true}}))
+           {:status 201 :body {}}))
     (is (true? (database/user-exists? db login))))
 
   (alter-var-root #'system component/stop))

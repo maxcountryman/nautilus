@@ -16,7 +16,7 @@
   (stop [this]
     (if-not cache
       this
-      (reset! cache nil))))
+      (dissoc this :cache :path))))
 
 (defn new-component
   "Returns a new Portal component."

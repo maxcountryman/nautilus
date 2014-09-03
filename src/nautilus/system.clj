@@ -17,6 +17,7 @@
 
     => (component/stop sys)"
   (:require [com.stuartsierra.component    :as component]
+            [nautilus.component.client     :as client]
             [nautilus.component.database   :as database]
             [nautilus.component.portal     :as portal]
             [nautilus.component.web-server :as web-server]))
@@ -43,6 +44,9 @@
    (component/system-map
      :database   (database/new-component db-host db-port)
      :portal     (portal/new-component)
+     :client     (component/using
+                   (client/new-component)
+                   [:database])
      :web-server (component/using
                    (web-server/new-component web-host web-port web-jetty-opts)
-                   [:database :portal]))))
+                   [:client :database :portal]))))

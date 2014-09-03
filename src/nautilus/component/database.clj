@@ -35,7 +35,8 @@
   (stop [this]
     (if-not client
       this
-      (.shutdown client))))
+      (do (.shutdown client)
+          (dissoc this :client)))))
 
 (defn new-component
   "Returns a new Database component provided host and port."
