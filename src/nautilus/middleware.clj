@@ -44,15 +44,15 @@
 
 (defn wrap-middleware
   "A middleware which itself wraps other middleware.
-  
+
   This is a convenience wrapper which provides an easy way to wrap a handler
   with the middleware which provide the routes Nautilus implements. All routes
   are implemented as middleware components which are composed with a handler
   at this level.
-  
+
   Takes a handler and db (a Database component) and returns a fn which takes a
   request map."
-  [client handler db portal]
+  [handler client db portal]
   (-> handler
       (wrap-user-routes db)
       (wrap-oauth-routes client db)

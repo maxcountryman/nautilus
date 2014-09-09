@@ -1,10 +1,10 @@
 (ns nautilus.test-middleware-user
   (:require [clojure.test               :refer [deftest is]]
             [com.stuartsierra.component :as component]
-            [liza.store                 :refer [in-memory-store]]
             [nautilus.database          :as database]
             [nautilus.middleware.user   :as user]
             [nautilus.system            :as system]
+            [nautilus.test-core         :refer [memory-bucket]]
             [nautilus.utils             :as utils]))
 
 (def system nil)
@@ -38,7 +38,7 @@
          (utils/invalid-request "Invalid email"))))
 
 (deftest test-ensure-unique
-  (with-redefs [database/connect-bucket (constantly (in-memory-store))]
+  (with-redefs [database/connect-bucket (constantly (memory-bucket))]
     (alter-var-root #'system component/start))
 
   (let [db (:database system)]
@@ -50,12 +50,14 @@
   (alter-var-root #'system component/stop))
 
 (deftest test-create-user
-  (with-redefs [database/connect-bucket (constantly (in-memory-store))]
+  (with-redefs [database/connect-bucket (constantly (memory-bucket))]
     (alter-var-root #'system component/start))
 
   (let [db    (:database system)
         login "baz@qux.tld"]
-    (is (= (user/create-user {:db db :body {:email login}})
+    (is (= (user/create-user {:db   db
+                              :body {:email    login
+                                     :password "hunter2"}})
            {:status 201 :body {}}))
     (is (true? (database/user-exists? db login))))
 

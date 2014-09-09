@@ -86,7 +86,6 @@
   [{:keys [db] {:keys [email password]} :body}]
 
   (let [user (dissoc (database/new-user! db email password) :password)]
-    (prn user)
     {:status 201 :body user}))
 
 (defn create-response

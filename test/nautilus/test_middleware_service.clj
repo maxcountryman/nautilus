@@ -1,10 +1,10 @@
 (ns nautilus.test-middleware-service
  (:require [clojure.test                :refer [deftest is]]
            [com.stuartsierra.component  :as component]
-           [liza.store                  :refer [in-memory-store]]
            [nautilus.database           :as database]
            [nautilus.middleware.service :as service]
            [nautilus.system             :as system]
+           [nautilus.test-core          :refer [memory-bucket]]
            [nautilus.utils              :as utils]))
 
 (def system nil)
@@ -12,7 +12,7 @@
   (constantly (system/new-system {:web-port 3100})))
 
 (deftest test-ensure-client-authorized
-  (with-redefs [database/connect-bucket (constantly (in-memory-store))]
+  (with-redefs [database/connect-bucket (constantly (memory-bucket))]
     (alter-var-root #'system component/start))
 
   (let [client (:client system)]
@@ -36,7 +36,7 @@
          (utils/invalid-request "Missing: host"))))
 
 (deftest test-ensure-unique
-  (with-redefs [database/connect-bucket (constantly (in-memory-store))]
+  (with-redefs [database/connect-bucket (constantly (memory-bucket))]
     (alter-var-root #'system component/start))
 
   (let [db (:database system)]
@@ -48,14 +48,14 @@
   (alter-var-root #'system component/stop))
 
 (deftest test-create-service
-  (with-redefs [database/connect-bucket (constantly (in-memory-store))]
+  (with-redefs [database/connect-bucket (constantly (memory-bucket))]
     (alter-var-root #'system component/start))
 
   (let [db      (:database system)
         service "foo"]
     (is (= (service/create-service {:db db :body {:host "localhost" 
                                                   :service "foo"}})
-           {:status 201 :body {"foo" {:host "localhost"}}}))
+           {:status 201 :body {:host "localhost"}}))
     (is (true? (database/service-exists? db service))))
   
   (alter-var-root #'system component/stop))
