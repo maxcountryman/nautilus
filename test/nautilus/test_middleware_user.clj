@@ -1,15 +1,13 @@
 (ns nautilus.test-middleware-user
-  (:require [clojure.test               :refer [deftest is]]
+  (:require [clojure.test               :refer [deftest is use-fixtures]]
             [com.stuartsierra.component :as component]
             [nautilus.database          :as database]
             [nautilus.middleware.user   :as user]
             [nautilus.system            :as system]
-            [nautilus.test-core         :refer [memory-bucket]]
+            [nautilus.test-core         :as test-core]
             [nautilus.utils             :as utils]))
 
-(def system nil)
-(alter-var-root #'system
-  (constantly (system/new-system {:web-port 3100})))
+(use-fixtures :each test-core/fixtures-each)
 
 (deftest test-valid-email
   (is (true? (user/valid-email? "foo@bar.tld")))
@@ -38,27 +36,17 @@
          (utils/invalid-request "Invalid email"))))
 
 (deftest test-ensure-unique
-  (with-redefs [database/connect-bucket (constantly (memory-bucket))]
-    (alter-var-root #'system component/start))
-
-  (let [db (:database system)]
+  (let [db (:database test-core/system)]
     (database/new-user! db "foo@bar.tld" "hunter2")
     (is (nil? (user/ensure-unique {:db db :body {:email "maxc@me.com"}})))
     (is (= (user/ensure-unique {:db db :body {:email "foo@bar.tld"}})
-           (utils/invalid-request "User exists"))))
-
-  (alter-var-root #'system component/stop))
+           (utils/invalid-request "User exists")))))
 
 (deftest test-create-user
-  (with-redefs [database/connect-bucket (constantly (memory-bucket))]
-    (alter-var-root #'system component/start))
-
-  (let [db    (:database system)
+  (let [db    (:database test-core/system)
         login "baz@qux.tld"]
     (is (= (user/create-user {:db   db
                               :body {:email    login
                                      :password "hunter2"}})
            {:status 201 :body {}}))
-    (is (true? (database/user-exists? db login))))
-
-  (alter-var-root #'system component/stop))
+    (is (true? (database/user-exists? db login)))))
