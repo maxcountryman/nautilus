@@ -38,7 +38,6 @@
 
     (when-not (:help opts)
       (-> (dissoc opts :help)
+          (assoc :jetty-opts {:join? true})
           system/new-system
-          component/start)
-
-      (while true))))
+          component/start))))
