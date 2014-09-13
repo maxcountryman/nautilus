@@ -30,9 +30,23 @@
             [nautilus.middleware.shared :as shared]))
 
 
+;; Utils
+(defn json-request?
+  "Returns true if request content-type conforms of a regex, false otherwise."
+  [request]
+  (if-let [type (:content-type request)]
+    (not (empty? (re-find #"^application/(.+\+)?json" type)))))
+
 ;; Request validators
 ;;
 ;; TODO: Shared with OAuth, move to a common location.
+(defn ensure-content-type
+  "Return if request content-type is a JSON content-type, otherwise an error
+  response."
+  [request]
+  (when-not (json-request? request)
+    (utils/invalid-request "Non-JSON Content-Type")))
+
 (defn ensure-client-authorized
   "Returns nil if request contains valid client credentials, otherwise an error
   response."
@@ -60,7 +74,8 @@
     (utils/invalid-request "Service exists")))
 
 (def maybe-errored
-  (some-fn ensure-client-authorized
+  (some-fn ensure-content-type
+           ensure-client-authorized
            ensure-params
            ensure-unique))
 
