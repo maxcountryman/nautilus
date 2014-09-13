@@ -2,6 +2,10 @@
 
 Nautilus is a user authentication and management service.
 
+## Setup
+Currently Nautilus requires Riak 1.4 as its persistence layer. Ensure Riak is
+installed and running. By default, Nautilus looks for Riak on localhost:8087.
+
 ## Usage
 Nautilus is a standalone service which provides pre-authenticated, transient
 proxies to privileged backend services. For instance, a client application can
