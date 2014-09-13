@@ -32,6 +32,12 @@
         f
         (store/put this k))))
 
+(defmacro always
+  "Like constantly, but delays evaluation of x."
+  [x]
+  `(fn [& args#]
+     ~x))
+
 (defn memory-bucket [] (MemoryBucket. (atom {})))
 
 (defn fixtures-each
@@ -44,7 +50,7 @@
     (constantly (system/new-system {:web-port 3100})))
 
   ;; Start the system with an in-memory bucket
-  (with-redefs [database/connect-bucket (constantly (memory-bucket))]
+  (with-redefs [database/connect-bucket (always (memory-bucket))]
     (alter-var-root #'system component/start))
 
   ;; Execute the test fn

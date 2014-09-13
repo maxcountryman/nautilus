@@ -122,13 +122,13 @@
   (or (when-not bearer-token
         (utils/invalid-request "Missing: Bearer token"))
       (when-not (database/token-exists? db bearer-token)
+        (prn bearer-token)
         (-> (utils/access-denied "Invalid Bearer token")
             (assoc :status 401)))))
 
 (defn ensure-service
   "Returns nil if request path-params contains an existing service, otherwise
-  an error response. Anticipates wrap-query-string proceeded this. Also
-  expects a db key."
+  an error response. Also expects a db key."
   [{:keys [db] {:keys [service]} :path-params :as request}]
   (when-not (database/service-exists? db service)
     (utils/invalid-request (str "No such service: " service))))
@@ -183,7 +183,7 @@
     {:status  201
      :body    {:uri     (request->portal-uri request portal)
                :ttl     portal-ttl
-               :headers {:X-Portal-Id portal-id}}}))
+               :headers {"X-Portal-Id" portal-id}}}))
 
 (defn create-response
   "Portal creation wrapper, returns either an error or a successful response."
