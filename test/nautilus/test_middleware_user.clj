@@ -42,6 +42,18 @@
     (is (= (user/ensure-unique {:db db :body {:email "foo@bar.tld"}})
            (utils/invalid-request "User exists")))))
 
+(deftest test-ensure-update-args
+  (is (nil? (user/ensure-update-args {:body {:email "user" :metadata {}}})))
+  (is (= (user/ensure-update-args {:body {:metadata {}}})
+         (utils/invalid-request "Missing: email")))
+  (is (= (user/ensure-update-args {:body {:email "user"}})
+         (utils/invalid-request "Missing: metadata"))))
+
+(deftest test-ensure-get-args
+  (is (nil? (user/ensure-get-args {:body {:email "user"}})))
+  (is (= (user/ensure-get-args {:body {}})
+         (utils/invalid-request "Missing: email"))))
+
 (deftest test-create-user
   (let [db    (:database test-core/system)
         login "foo@bar.tld"]
@@ -52,7 +64,27 @@
     (is (true? (database/user-exists? db login)))))
 
 (deftest test-update-user
-  (let [db    (:database test-core/system)
-        login "foo@bar.tld"]
-    (is (= (user/update-user {:db db
-                              :body {:email login}})))))
+  (let [db       (:database test-core/system)
+        login    "foo@bar.tld"
+        metadata {:foo :bar}]
+    (is (= (user/update-user {:db   db
+                              :body {:email login
+                                     :metadata  metadata}})
+           {:status 200 :body {:meta metadata}}))))
+
+(deftest test-get-user
+  (let [db       (:database test-core/system)
+        login    "foo@bar.tld"
+        metadata {:foo :bar}]
+    ;; Create user.
+    (user/create-user {:db db :body {:email login :password "hunter2"}})
+
+    (is (= (user/get-user {:db   db
+                           :body {:email login}})
+           {:status 200 :body {}}))
+
+    ;; Update user.
+    (user/update-user {:db db :body {:email login :metadata metadata}})
+
+    (is (= (user/get-user {:db db :body {:email login}})
+           {:status 200 :body {:meta metadata}}))))

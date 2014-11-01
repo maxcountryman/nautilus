@@ -77,10 +77,18 @@
 (defn ensure-update-args
   "Returns nil if request body contains email and metadata, otherwise an error
   response. Anticipates wrap-json-body proceeded this."
-  [{{:keys [email metadata]} :body :as request}]
-  (or (ensure-email request)
+  [{{:keys [email metadata]} :body}]
+  (or (when-not email
+        (utils/invalid-request "Missing: email"))
       (when-not metadata
         (utils/invalid-request "Missing: metadata"))))
+
+(defn ensure-get-args
+  "Returns nil if request body contains email, otherwise an error response.
+  Anticipates wrap-json-body proceeded this."
+  [{{:keys [email]} :body}]
+  (when-not email
+    (utils/invalid-request "Missing: email")))
 
 (def maybe-create-errored
   (some-fn ensure-content-type
@@ -95,7 +103,7 @@
 
 (def maybe-get-errored
   (some-fn ensure-content-type
-           ensure-email
+           ensure-get-args
            portal/ensure-token))
 
 ;; Request handlers
@@ -118,7 +126,8 @@
   "Updates an existing user for the given email. Also expects a db key. Returns
   a successful response."
   [{:keys [db] {:keys [email metadata]} :body}]
-  (database/update-user! db email metadata))
+  (let [user (dissoc (database/update-user! db email metadata) :password)]
+    {:status 200 :body user}))
 
 (defn update-response
   "User update wrapper, returns either an error or a successful response."
@@ -130,7 +139,8 @@
   "Retrives an existing user for the tiven email. Also expects a db key.
   Returns a successful response."
   [{:keys [db] {:keys [email]} :body}]
-  (database/get-user db email))
+  (let [user (dissoc (database/get-user db email) :password)]
+    {:status 200 :body user}))
 
 (defn get-response
   "User get wrapper, returns either an error or a successful response."
