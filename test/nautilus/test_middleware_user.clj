@@ -23,7 +23,7 @@
   (is (= (user/ensure-content-type {})
          (utils/invalid-request "Non-JSON Content-Type"))))
 
-(deftest test-create-ensure-args
+(deftest test-ensure-create-args
   (is (nil? (user/ensure-create-args {:body {:email "user" :password "pass"}})))
   (is (= (user/ensure-create-args {:body {:password "pass"}})
          (utils/invalid-request "Missing: email")))
