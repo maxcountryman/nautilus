@@ -20,6 +20,16 @@
   (let [encrypted (bcrypt/encrypt password)]
     (store/modify user-bucket login (merge-existing {:password encrypted}))))
 
+(defn update-user!
+  "Updates the metadata of a given user."
+  [{:keys [user-bucket]} login metadata]
+  (store/modify user-bucket login (merge-existing {:meta metadata})))
+
+(defn get-user
+  "Retrives a given user."
+  [{:keys [user-bucket]} login]
+  (store/get user-bucket login))
+
 (defn new-token!
   "Creates a new token in the token-bucket keyed by token containing login.
   Updates the user associated with login to contain the token in its value map.

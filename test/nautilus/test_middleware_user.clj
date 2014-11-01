@@ -23,11 +23,11 @@
   (is (= (user/ensure-content-type {})
          (utils/invalid-request "Non-JSON Content-Type"))))
 
-(deftest test-ensure-args
-  (is (nil? (user/ensure-args {:body {:email "user" :password "pass"}})))
-  (is (= (user/ensure-args {:body {:password "pass"}})
+(deftest test-create-ensure-args
+  (is (nil? (user/ensure-create-args {:body {:email "user" :password "pass"}})))
+  (is (= (user/ensure-create-args {:body {:password "pass"}})
          (utils/invalid-request "Missing: email")))
-  (is (= (user/ensure-args {:body {:email "user"}})
+  (is (= (user/ensure-create-args {:body {:email "user"}})
          (utils/invalid-request "Missing: password"))))
 
 (deftest test-ensure-email
@@ -44,9 +44,15 @@
 
 (deftest test-create-user
   (let [db    (:database test-core/system)
-        login "baz@qux.tld"]
+        login "foo@bar.tld"]
     (is (= (user/create-user {:db   db
                               :body {:email    login
                                      :password "hunter2"}})
            {:status 201 :body {}}))
     (is (true? (database/user-exists? db login)))))
+
+(deftest test-update-user
+  (let [db    (:database test-core/system)
+        login "foo@bar.tld"]
+    (is (= (user/update-user {:db db
+                              :body {:email login}})))))

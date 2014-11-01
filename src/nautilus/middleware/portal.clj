@@ -122,7 +122,6 @@
   (or (when-not bearer-token
         (utils/invalid-request "Missing: Bearer token"))
       (when-not (database/token-exists? db bearer-token)
-        (prn bearer-token)
         (-> (utils/access-denied "Invalid Bearer token")
             (assoc :status 401)))))
 

@@ -19,10 +19,12 @@
   Bear in mind that this middleware depends on a database backend. Currently
   this must be in the format provided by nautilus.component.database. Using a
   system ensures that this component is available where necessary."
-  (:require [clout.core           :as clout]
-            [ring.middleware.json :refer [wrap-json-body wrap-json-response]]
-            [nautilus.database    :as database]
-            [nautilus.utils       :as utils]))
+  (:require [clout.core                 :as clout]
+            [ring.middleware.json       :refer [wrap-json-body
+                                                wrap-json-response]]
+            [nautilus.database          :as database]
+            [nautilus.middleware.portal :as portal]
+            [nautilus.utils             :as utils]))
 
 
 ;; Utils
@@ -49,7 +51,7 @@
   (when-not (json-request? request)
     (utils/invalid-request "Non-JSON Content-Type")))
 
-(defn ensure-args
+(defn ensure-create-args
   "Returns nil if request body contains email and password, otherwise an error
   response. Anticipates wrap-json-body proceeded this."
   [{{:keys [email password]} :body}]
@@ -72,12 +74,29 @@
   (when (database/user-exists? db email)
     (utils/invalid-request "User exists")))
 
-(def maybe-errored
+(defn ensure-update-args
+  "Returns nil if request body contains email and metadata, otherwise an error
+  response. Anticipates wrap-json-body proceeded this."
+  [{{:keys [email metadata]} :body :as request}]
+  (or (ensure-email request)
+      (when-not metadata
+        (utils/invalid-request "Missing: metadata"))))
+
+(def maybe-create-errored
   (some-fn ensure-content-type
-           ensure-args
+           ensure-create-args
            ensure-email
            ensure-unique))
 
+(def maybe-update-errored
+  (some-fn ensure-content-type
+           ensure-update-args
+           portal/ensure-token))
+
+(def maybe-get-errored
+  (some-fn ensure-content-type
+           ensure-email
+           portal/ensure-token))
 
 ;; Request handlers
 (defn create-user
@@ -92,19 +111,54 @@
   "User creation wrapper, returns either an error or a successful response."
   [request]
   (or (utils/maybe-wrong-method request #{:post})
-      (maybe-errored request)
+      (maybe-create-errored request)
       (create-user request)))
 
+(defn update-user
+  "Updates an existing user for the given email. Also expects a db key. Returns
+  a successful response."
+  [{:keys [db] {:keys [email metadata]} :body}]
+  (database/update-user! db email metadata))
+
+(defn update-response
+  "User update wrapper, returns either an error or a successful response."
+  [request]
+  (or (maybe-update-errored request)
+      (update-user request)))
+
+(defn get-user
+  "Retrives an existing user for the tiven email. Also expects a db key.
+  Returns a successful response."
+  [{:keys [db] {:keys [email]} :body}]
+  (database/get-user db email))
+
+(defn get-response
+  "User get wrapper, returns either an error or a successful response."
+  [request]
+  (or (maybe-get-errored request)
+      (get-user request)))
+
+(defn update-or-get-response
+  [{:keys [request-method] :as request}]
+  (let [routes {:put update-response
+                :get get-response}]
+    (if-let [route-fn (request-method routes)]
+      (route-fn request)
+      {:status 405 :body "Method Not Allowed"})))
 
 ;; Middleware
 (defn wrap-user-routes
   "A middleware which adds a user creation endpoint."
   [handler db]
   (fn [request]
-    (let [request      (assoc request :db db)
-          create-resp* (-> create-response
-                           wrap-json-response
-                           (wrap-json-body {:keywords? true}))]
+    (let [request             (assoc request :db db)
+          create-resp*        (-> create-response
+                                  wrap-json-response
+                                  (wrap-json-body {:keywords? true}))
+          update-or-get-resp* (-> update-or-get-response
+                                  wrap-json-response
+                                  (wrap-json-body {:keywords true}))]
       (condp clout/route-matches request
-        "/user" (create-resp* request)
+        "/user"    (create-resp* request)
+        "/user/me" (update-or-get-resp* request)
         (handler request)))))
